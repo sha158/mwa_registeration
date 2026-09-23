@@ -1,0 +1,5 @@
+export { mockAdminService as adminService } from './mockAdminService'
+export { mockAuthService as authService } from './mockAuthService'
+export { mockDocumentService as documentService } from './mockDocumentService'
+export { mockExportService as exportService } from './mockExportService'
+export { mockRegistrationService as registrationService } from './mockRegistrationService'

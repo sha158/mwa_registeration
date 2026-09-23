@@ -24,6 +24,7 @@ export default function ReviewPage() {
   const navigate = useNavigate()
   const drafts = useRegistrationStore((s) => s.members)
   const completeRegistration = useRegistrationStore((s) => s.completeRegistration)
+  const submissionId = useRegistrationStore((s) => s.submissionId)
   const [state, setState] = useState<SubmitState>({ status: 'idle' })
 
   const members = MEMBER_NUMBERS.map((n) => {
@@ -52,6 +53,7 @@ export default function ReviewPage() {
     let result
     try {
       result = await registrationService.submitRegistration({
+        submissionId,
         members: team,
         consent: { eligibility: true, accuracy: true, dataUse: true },
       })

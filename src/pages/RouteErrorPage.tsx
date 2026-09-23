@@ -18,7 +18,7 @@ export default function RouteErrorPage() {
   )
 
   let content
-  if (error instanceof ServiceError && error.code === 'UNAUTHORIZED') {
+  if (error instanceof ServiceError && (error.code === 'UNAUTHORIZED' || error.code === 'FORBIDDEN')) {
     content = (
       <StateMessage
         tone="danger"

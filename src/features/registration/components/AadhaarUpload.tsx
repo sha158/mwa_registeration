@@ -7,7 +7,8 @@ import { documentService } from '@/services'
 import type { DocumentRef, MemberNumber } from '@/types/domain'
 import { cn } from '@/utils/cn'
 import { formatFileSize } from '@/utils/format'
-import { AADHAAR_ACCEPT, validateAadhaarFile } from '@/validation/file'
+import { AADHAAR_ACCEPT, detectAadhaarType, validateAadhaarFile } from '@/validation/file'
+import { useRegistrationStore } from '../store'
 
 type UploadState = { status: 'idle' } | { status: 'uploading'; fileName: string } | { status: 'failed'; message: string }
 
@@ -26,20 +27,23 @@ export function AadhaarUpload({ memberNumber, value, onChange, onBlur, error, fo
   const inputRef = useRef<HTMLInputElement>(null)
   const [state, setState] = useState<UploadState>({ status: 'idle' })
   const [dragging, setDragging] = useState(false)
+  const submissionId = useRegistrationStore((s) => s.submissionId)
   const id = useId()
   const errorId = `${id}-error`
   const shownError = state.status === 'failed' ? state.message : error
 
   async function handleFile(file: File | undefined) {
     if (!file) return
-    const problem = validateAadhaarFile(file)
+    const problem =
+      validateAadhaarFile(file) ??
+      ((await detectAadhaarType(file)) ? null : 'This file is not a valid JPG, PNG or PDF. Please choose another file.')
     if (problem) {
       setState({ status: 'failed', message: problem })
       return
     }
     setState({ status: 'uploading', fileName: file.name })
     try {
-      const ref = await documentService.uploadAadhaar(file, memberNumber)
+      const ref = await documentService.uploadAadhaar(file, { submissionId, memberNumber })
       setState({ status: 'idle' })
       onChange(ref)
     } catch {

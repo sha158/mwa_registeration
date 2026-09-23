@@ -7,6 +7,8 @@ import { createMemberSchema, type MemberFormValues } from '@/validation/memberSc
 export type RegistrationSuccess = Extract<SubmitResult, { ok: true }>
 
 interface RegistrationState {
+  /** Random id for this draft. Scopes Aadhaar uploads and makes submission idempotent. */
+  submissionId: string
   members: Partial<Record<MemberNumber, MemberFormValues>>
   success: RegistrationSuccess | null
   saveMember: (n: MemberNumber, values: MemberFormValues) => void
@@ -18,24 +20,27 @@ interface RegistrationState {
  * Draft of the team being registered.
  *
  * Persistence is deliberate and narrow: sessionStorage (cleared when the tab closes) so a
- * mobile browser reload does not wipe the form. It holds typed text fields and the opaque
- * Aadhaar upload reference (id, file name, size) — never file contents or URLs.
+ * mobile browser reload does not wipe the form. It holds typed text fields, the draft id and the opaque
+ * Aadhaar upload reference (storage path, file name, size) — never file contents or URLs.
  * The draft is cleared as soon as the registration is submitted.
  */
 export const useRegistrationStore = create<RegistrationState>()(
   persist(
     (set) => ({
+      submissionId: crypto.randomUUID(),
       members: {},
       success: null,
       saveMember: (n, values) => set((s) => ({ members: { ...s.members, [n]: values }, success: null })),
-      completeRegistration: (result) => set({ members: {}, success: result }),
-      startOver: () => set({ members: {}, success: null }),
+      completeRegistration: (result) => set({ submissionId: crypto.randomUUID(), members: {}, success: result }),
+      startOver: () => set({ submissionId: crypto.randomUUID(), members: {}, success: null }),
     }),
     {
       name: 'mwa.registrationDraft',
-      version: 1,
+      version: 2,
+      // v1 drafts had no submission id and mock-only upload references: start fresh.
+      migrate: () => ({ submissionId: crypto.randomUUID(), members: {}, success: null }),
       storage: createJSONStorage(() => sessionStorage),
-      partialize: (s) => ({ members: s.members, success: s.success }),
+      partialize: (s) => ({ submissionId: s.submissionId, members: s.members, success: s.success }),
     },
   ),
 )

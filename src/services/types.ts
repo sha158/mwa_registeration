@@ -34,8 +34,11 @@ export interface SignedDocumentUrl {
 }
 
 export interface DocumentService {
-  /** Uploads to private storage. Returns a reference only — never a public URL. */
-  uploadAadhaar(file: File, memberNumber: MemberNumber): Promise<DocumentRef>
+  /**
+   * Uploads to private storage under the draft's submission id. Returns a reference only —
+   * never a public URL.
+   */
+  uploadAadhaar(file: File, target: { submissionId: string; memberNumber: MemberNumber }): Promise<DocumentRef>
   /** Admin only. Short-lived signed URL (Supabase Storage `createSignedUrl`). */
   getSignedUrl(uploadId: string): Promise<SignedDocumentUrl>
 }
@@ -52,6 +55,9 @@ export interface AdminService {
   updateTeamStatus(teamId: string, status: RegistrationStatus, note?: string): Promise<Team>
   getSettings(): Promise<RegistrationSettings & { registeredTeams: number }>
   setRegistrationOpen(open: boolean): Promise<void>
+  /** Aadhaar uploads older than a day that no registration references. */
+  listOrphanUploads(): Promise<string[]>
+  removeUploads(paths: string[]): Promise<void>
 }
 
 export interface AuthService {
@@ -65,7 +71,15 @@ export interface ExportService {
   participantsCsv(): Promise<Blob>
 }
 
-export type ServiceErrorCode = 'NETWORK_ERROR' | 'UNAUTHORIZED' | 'NOT_FOUND' | 'INVALID_CREDENTIALS' | 'UPLOAD_FAILED'
+export type ServiceErrorCode =
+  | 'NETWORK_ERROR'
+  | 'UNAUTHORIZED'
+  | 'FORBIDDEN'
+  | 'NOT_FOUND'
+  | 'INVALID_CREDENTIALS'
+  | 'UPLOAD_FAILED'
+  | 'REGISTRATION_FULL'
+  | 'UNKNOWN'
 
 export class ServiceError extends Error {
   readonly code: ServiceErrorCode

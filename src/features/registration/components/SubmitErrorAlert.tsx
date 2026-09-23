@@ -38,7 +38,12 @@ export function SubmitErrorAlert({ error, onRetry }: { error: SubmitError; onRet
     case 'VALIDATION_FAILED':
       return (
         <Alert tone="warning" live title="Some details need attention">
-          {error.message}
+          {error.message}{' '}
+          {error.memberNumber && (
+            <Link to={`/register/member/${error.memberNumber}`} className={linkClass}>
+              Edit member {error.memberNumber}
+            </Link>
+          )}
         </Alert>
       )
     case 'NETWORK_ERROR':

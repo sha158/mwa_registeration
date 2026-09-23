@@ -8,9 +8,11 @@ export type RegistrationStatus = 'submitted' | 'verified' | 'rejected' | 'cancel
 
 /** Reference to an uploaded Aadhaar document. Never contains file contents or URLs. */
 export interface DocumentRef {
+  /** Opaque storage reference (the private storage path). */
   uploadId: string
   fileName: string
   sizeBytes: number
+  mimeType?: string
 }
 
 interface MemberBase {
@@ -71,6 +73,8 @@ export interface Availability {
 }
 
 export interface RegistrationPayload {
+  /** Draft id generated on the device; scopes uploads and makes submission idempotent. */
+  submissionId: string
   members: [MemberInput, MemberInput, MemberInput]
   consent: { eligibility: true; accuracy: true; dataUse: true }
 }
@@ -79,7 +83,7 @@ export type SubmitResult =
   | { ok: true; registrationNumber: string; memberNames: string[]; submittedAt: string }
   | { ok: false; error: 'REGISTRATION_FULL' | 'REGISTRATION_CLOSED' | 'NETWORK_ERROR' | 'UNKNOWN' }
   | { ok: false; error: 'DUPLICATE_PARTICIPANT'; memberNumbers: MemberNumber[] }
-  | { ok: false; error: 'VALIDATION_FAILED'; message: string }
+  | { ok: false; error: 'VALIDATION_FAILED'; message: string; memberNumber?: MemberNumber }
 
 export type SubmitError = Extract<SubmitResult, { ok: false }>
 

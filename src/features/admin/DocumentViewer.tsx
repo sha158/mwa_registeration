@@ -16,7 +16,7 @@ type ViewerState =
 /** Fetches a short-lived signed URL on demand and releases it when the viewer closes. */
 export function DocumentViewer({ document, memberName }: { document: DocumentRef; memberName: string }) {
   const [state, setState] = useState<ViewerState>({ status: 'closed' })
-  const isPdf = document.fileName.toLowerCase().endsWith('.pdf') && !document.uploadId.startsWith('seed-')
+  const isPdf = document.mimeType === 'application/pdf'
 
   async function open() {
     setState({ status: 'loading' })

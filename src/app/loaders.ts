@@ -1,7 +1,7 @@
-import { redirect, type LoaderFunctionArgs } from 'react-router'
+import { createContext, redirect, type LoaderFunctionArgs, type MiddlewareFunction } from 'react-router'
 import { firstIncompleteMember, isMemberNumber, useRegistrationStore } from '@/features/registration/store'
-import { adminService, authService, registrationService } from '@/services'
-import type { MemberNumber } from '@/types/domain'
+import { adminService, authService, registrationService, ServiceError } from '@/services'
+import type { AdminSession, MemberNumber } from '@/types/domain'
 
 export const availabilityLoader = () => registrationService.getAvailability()
 
@@ -34,18 +34,40 @@ export function successLoader() {
 
 // ---------- Admin ----------
 
-export async function requireAdminLoader({ request }: LoaderFunctionArgs) {
+const adminSessionContext = createContext<AdminSession | null>(null)
+
+/**
+ * Runs before any admin loader (loaders of matched routes run in parallel, so a check in the
+ * parent loader would still let child data requests fire for signed-out visitors).
+ */
+export const requireAdminMiddleware: MiddlewareFunction = async ({ request, context }, next) => {
   const session = await authService.getSession()
   if (!session) {
     const { pathname } = new URL(request.url)
     throw redirect(`/admin/login?next=${encodeURIComponent(pathname)}`)
   }
+  context.set(adminSessionContext, session)
+  return next()
+}
+
+export function requireAdminLoader({ context }: LoaderFunctionArgs): AdminSession {
+  const session = context.get(adminSessionContext)
+  if (!session) throw new ServiceError('UNAUTHORIZED')
   return session
 }
 
 export async function adminLoginLoader() {
-  const session = await authService.getSession()
-  return session ? redirect('/admin') : null
+  try {
+    const session = await authService.getSession()
+    return session ? redirect('/admin') : null
+  } catch (error) {
+    // Signed in with an account that is not an organiser: sign out and show the form.
+    if (error instanceof ServiceError && error.code === 'FORBIDDEN') {
+      await authService.signOut()
+      return null
+    }
+    throw error
+  }
 }
 
 export async function dashboardLoader() {
@@ -65,4 +87,7 @@ export async function teamDetailLoader({ params }: LoaderFunctionArgs) {
   return team
 }
 
-export const settingsLoader = () => adminService.getSettings()
+export async function settingsLoader() {
+  const [settings, orphanUploads] = await Promise.all([adminService.getSettings(), adminService.listOrphanUploads()])
+  return { settings, orphanUploads }
+}

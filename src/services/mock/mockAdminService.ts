@@ -46,4 +46,13 @@ export const mockAdminService: AdminService = {
     await delay()
     db.settings.registrationOpen = open
   },
+
+  async listOrphanUploads() {
+    await delay()
+    return []
+  },
+
+  async removeUploads() {
+    await delay()
+  },
 }

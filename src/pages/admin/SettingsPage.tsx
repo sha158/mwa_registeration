@@ -7,10 +7,11 @@ import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { Pill } from '@/components/ui/StatusBadge'
 import { ExportActions } from '@/features/admin/ExportActions'
+import { OrphanUploads } from '@/features/admin/OrphanUploads'
 import { adminService } from '@/services'
 
 export default function SettingsPage() {
-  const settings = useLoaderData<typeof settingsLoader>()
+  const { settings, orphanUploads } = useLoaderData<typeof settingsLoader>()
   const revalidator = useRevalidator()
   const [confirmClose, setConfirmClose] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -82,6 +83,8 @@ export default function SettingsPage() {
         <p className="text-body text-ink-muted">CSV files contain personal data. Store and share them carefully.</p>
         <ExportActions />
       </section>
+
+      <OrphanUploads paths={orphanUploads} />
 
       <Dialog
         open={confirmClose}

@@ -33,7 +33,7 @@ function member(teamId: string, memberNumber: MemberNumber, seed: SeedMember): T
     residentialAddress: ADDRESSES[district],
     studyingInMadrasa: false,
     isAalim: false,
-    aadhaar: { uploadId: `seed-${teamId}-${memberNumber}`, fileName: `aadhaar_${slug}.pdf`, sizeBytes: 812_000 },
+    aadhaar: { uploadId: `seed-${teamId}-${memberNumber}`, fileName: `aadhaar_${slug}.pdf`, sizeBytes: 812_000, mimeType: 'image/svg+xml' },
   }
   return role[0] === 'student'
     ? { ...base, participantStatus: 'student', courseDetails: role[1], institution: role[2] }

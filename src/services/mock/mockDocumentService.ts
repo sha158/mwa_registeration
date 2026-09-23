@@ -15,12 +15,12 @@ function placeholderDocument(): Blob {
 }
 
 export const mockDocumentService: DocumentService = {
-  async uploadAadhaar(file, memberNumber) {
+  async uploadAadhaar(file, { memberNumber }) {
     await delay(900)
     if (getScenario() === 'upload-fail') throw new ServiceError('UPLOAD_FAILED')
     const uploadId = `upload-${memberNumber}-${crypto.randomUUID()}`
     files.set(uploadId, file)
-    return { uploadId, fileName: file.name, sizeBytes: file.size }
+    return { uploadId, fileName: file.name, sizeBytes: file.size, mimeType: file.type }
   },
 
   async getSignedUrl(uploadId) {

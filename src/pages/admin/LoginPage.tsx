@@ -10,7 +10,7 @@ import { Field } from '@/components/ui/Field'
 import { Input } from '@/components/ui/Input'
 import { Logo } from '@/components/ui/Logo'
 import { EVENT } from '@/config/event'
-import { authService, ServiceError } from '@/services'
+import { authService, ServiceError, usingMockServices } from '@/services'
 
 const schema = z.object({
   email: z.email('Please enter a valid email address.'),
@@ -38,10 +38,13 @@ export default function LoginPage() {
       const next = redirectedFrom?.startsWith('/admin') ? redirectedFrom : '/admin'
       navigate(next, { replace: true })
     } catch (error) {
+      const code = error instanceof ServiceError ? error.code : 'UNKNOWN'
       setFailure(
-        error instanceof ServiceError && error.code === 'INVALID_CREDENTIALS'
+        code === 'INVALID_CREDENTIALS'
           ? 'Incorrect email or password.'
-          : "Couldn't sign in. Check your connection and try again.",
+          : code === 'FORBIDDEN'
+            ? 'This account does not have organiser access.'
+            : "Couldn't sign in. Check your connection and try again.",
       )
     }
   }
@@ -90,7 +93,7 @@ export default function LoginPage() {
             Sign In
           </Button>
         </form>
-        {import.meta.env.DEV && (
+        {usingMockServices && (
           <p className="mt-4 text-center text-caption text-ink-subtle">
             Development mock login: admin@mwa.test / mwa-admin
           </p>

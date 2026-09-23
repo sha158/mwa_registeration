@@ -14,6 +14,7 @@ import {
   memberStepLoader,
   registerIndexLoader,
   requireAdminLoader,
+  requireAdminMiddleware,
   reviewLoader,
   settingsLoader,
   successLoader,
@@ -53,6 +54,7 @@ export const router = createBrowserRouter([
       { path: 'admin/login', loader: adminLoginLoader, lazy: page(() => import('@/pages/admin/LoginPage')) },
       {
         path: 'admin',
+        middleware: [requireAdminMiddleware],
         loader: requireAdminLoader,
         lazy: async () => ({ Component: (await import('@/layouts/AdminLayout')).AdminLayout }),
         children: [

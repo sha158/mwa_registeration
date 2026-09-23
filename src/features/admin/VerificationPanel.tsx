@@ -5,27 +5,31 @@ import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { Textarea } from '@/components/ui/Input'
-import { adminService } from '@/services'
+import { adminService, ServiceError } from '@/services'
 import type { RegistrationStatus, Team } from '@/types/domain'
 
 export function VerificationPanel({ team }: { team: Team }) {
   const revalidator = useRevalidator()
   const [pending, setPending] = useState<RegistrationStatus | null>(null)
-  const [failed, setFailed] = useState(false)
+  const [failure, setFailure] = useState<string | null>(null)
   const [rejecting, setRejecting] = useState(false)
   const [note, setNote] = useState('')
   const noteId = useId()
 
   async function update(status: RegistrationStatus, adminNote?: string) {
     setPending(status)
-    setFailed(false)
+    setFailure(null)
     try {
       await adminService.updateTeamStatus(team.id, status, adminNote)
       setRejecting(false)
       setNote('')
       await revalidator.revalidate()
-    } catch {
-      setFailed(true)
+    } catch (error) {
+      setFailure(
+        error instanceof ServiceError && error.code === 'REGISTRATION_FULL'
+          ? 'All team slots are taken, so this team cannot be moved back to pending.'
+          : "Couldn't update the team. Please try again.",
+      )
     } finally {
       setPending(null)
     }
@@ -65,9 +69,9 @@ export function VerificationPanel({ team }: { team: Team }) {
           Move back to pending
         </Button>
       )}
-      {failed && (
+      {failure && (
         <Alert tone="danger" live>
-          Couldn't update the team. Please try again.
+          {failure}
         </Alert>
       )}
 
