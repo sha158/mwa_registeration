@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Eye } from 'lucide-react'
+import { Download, Eye } from 'lucide-react'
 import { Alert } from '@/components/ui/Alert'
-import { Button } from '@/components/ui/Button'
+import { Button, ButtonAnchor } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { Spinner } from '@/components/ui/Spinner'
+import { likelyAadhaarPdfPassword } from '@/domain/aadhaarPassword'
 import { documentService, type SignedDocumentUrl } from '@/services'
 import type { DocumentRef } from '@/types/domain'
 
@@ -13,10 +14,18 @@ type ViewerState =
   | { status: 'ready'; signed: SignedDocumentUrl }
   | { status: 'failed' }
 
+interface DocumentViewerProps {
+  document: DocumentRef
+  memberName: string
+  dateOfBirth: string
+}
+
 /** Fetches a short-lived signed URL on demand and releases it when the viewer closes. */
-export function DocumentViewer({ document, memberName }: { document: DocumentRef; memberName: string }) {
+export function DocumentViewer({ document, memberName, dateOfBirth }: DocumentViewerProps) {
   const [state, setState] = useState<ViewerState>({ status: 'closed' })
   const isPdf = document.mimeType === 'application/pdf'
+  // Android Chrome has no inline PDF viewer: an iframe shows a dead "Open" placeholder there.
+  const canPreviewPdf = typeof navigator !== 'undefined' && navigator.pdfViewerEnabled === true
 
   async function open() {
     setState({ status: 'loading' })
@@ -50,11 +59,35 @@ export function DocumentViewer({ document, memberName }: { document: DocumentRef
         )}
         {state.status === 'ready' &&
           (isPdf ? (
-            <iframe title={`Aadhaar document for ${memberName}`} src={state.signed.url} className="h-[60vh] w-full rounded-control border border-line" />
+            <div className="flex flex-col gap-3">
+              {canPreviewPdf ? (
+                <iframe title={`Aadhaar document for ${memberName}`} src={state.signed.url} className="h-[60vh] w-full rounded-control border border-line" />
+              ) : (
+                <p className="text-body text-ink-muted">This device can't preview PDFs here. Download the file to view it.</p>
+              )}
+              <PdfDownload url={state.signed.url} fileName={document.fileName} password={likelyAadhaarPdfPassword(memberName, dateOfBirth)} />
+            </div>
           ) : (
             <img src={state.signed.url} alt={`Aadhaar document for ${memberName}`} className="max-h-[60vh] w-full rounded-control object-contain" />
           ))}
       </Dialog>
     </>
+  )
+}
+
+function PdfDownload({ url, fileName, password }: { url: string; fileName: string; password: string | null }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <ButtonAnchor href={url} download={fileName} variant="primary" icon={<Download aria-hidden className="size-4" />}>
+        Download PDF
+      </ButtonAnchor>
+      {password && (
+        <p className="text-small text-ink-muted">
+          If the PDF asks for a password, try <strong className="font-semibold text-ink tabular">{password}</strong>{' '}
+          (e-Aadhaar: first 4 letters of the name in capitals + birth year).
+        </p>
+      )}
+      <p className="text-small text-ink-muted">Delete the file from your Downloads after checking.</p>
+    </div>
   )
 }

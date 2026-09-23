@@ -56,7 +56,7 @@ export function MemberDetailCard({ member }: { member: TeamMember }) {
           <CircleCheck aria-hidden className="size-4" />
           Aadhaar uploaded
         </p>
-        <DocumentViewer document={member.aadhaar} memberName={member.fullName} />
+        <DocumentViewer document={member.aadhaar} memberName={member.fullName} dateOfBirth={member.dateOfBirth} />
       </div>
     </section>
   )

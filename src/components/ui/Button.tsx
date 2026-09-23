@@ -61,6 +61,16 @@ export function Button({
   )
 }
 
+/** Plain anchor styled as a button, for non-route hrefs such as file downloads. */
+export function ButtonAnchor({ variant, size, icon, className, children, ...props }: ComponentProps<'a'> & CommonProps) {
+  return (
+    <a className={buttonClasses(variant, size, className)} {...props}>
+      {icon}
+      {children}
+    </a>
+  )
+}
+
 export function ButtonLink({ variant, size, icon, iconRight, className, children, ...props }: LinkProps & CommonProps) {
   return (
     <Link className={buttonClasses(variant, size, className)} {...props}>
