@@ -1,4 +1,4 @@
-import { EVENT, LIMITS } from '@/config/event'
+import { BOOK, EVENT, LIMITS } from '@/config/event'
 import { eligibleBirthRange } from '@/domain/age'
 import { formatDate } from '@/utils/format'
 
@@ -32,13 +32,13 @@ export const RULE_SECTIONS: { title: string; items: string[] }[] = [
       `Each team has exactly ${LIMITS.teamSize} members. One person registers the whole team.`,
       `Only ${LIMITS.maxTeams} teams can take part. Slots are allotted first-come, first-served.`,
       'Registration is free.',
-      'An Aadhaar card copy (JPG, PNG or PDF, up to 2 MB) is required for every member.',
+      'Every member must upload photos of the front and back of their Aadhaar card (JPG or PNG), or the e-Aadhaar PDF — up to 2 MB per file. The full name, date of birth and address must be clearly visible.',
       'Organisers verify every registration. Teams that do not meet the rules may be rejected.',
     ],
   },
   {
     title: 'Syllabus',
-    items: [`Questions are based exclusively on the prescribed book: ${EVENT.prescribedBook}.`],
+    items: [`Questions are based exclusively on the prescribed book “${BOOK.title}” by ${BOOK.author} (${BOOK.authorHonorific}).`],
   },
   {
     title: 'Competition day',

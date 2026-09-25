@@ -2,17 +2,42 @@ import { z } from 'zod'
 import { DISTRICTS } from '@/config/event'
 import { AGE_MESSAGE, checkAge } from '@/domain/age'
 import { ELIGIBILITY_MESSAGES } from '@/domain/eligibility'
-import type { DocumentRef, MemberInput } from '@/types/domain'
+import type { AadhaarDocuments, DocumentRef, MemberInput } from '@/types/domain'
 import { isValidMobile, normaliseMobile } from './mobile'
 
 const required = (label: string) => z.string().trim().min(1, `Please enter ${label}.`)
 const yesNo = (message: string) =>
   z.enum(['yes', 'no', ''], { error: message }).refine((v) => v !== '', message)
 
-const documentRef = z.custom<DocumentRef>(
-  (v) => typeof v === 'object' && v !== null && 'uploadId' in v,
-  'Please upload the Aadhaar card.',
-)
+const documentRef = z.custom<DocumentRef>((v) => typeof v === 'object' && v !== null && 'uploadId' in v)
+
+/**
+ * Aadhaar uploads for one member. Both modes keep their uploads in the form so switching mode
+ * does not discard them; only the selected mode is validated (see toAadhaarDocuments).
+ */
+const aadhaarForm = z
+  .object({
+    mode: z.enum(['photos', 'pdf']),
+    front: documentRef.nullable(),
+    back: documentRef.nullable(),
+    pdf: documentRef.nullable(),
+  })
+  .superRefine((v, ctx) => {
+    if (v.mode === 'pdf') {
+      if (!v.pdf) ctx.addIssue({ code: 'custom', path: ['pdf'], message: 'Please upload the e-Aadhaar PDF.' })
+      return
+    }
+    if (!v.front) ctx.addIssue({ code: 'custom', path: ['front'], message: 'Please upload the front of the Aadhaar card.' })
+    if (!v.back) ctx.addIssue({ code: 'custom', path: ['back'], message: 'Please upload the back of the Aadhaar card.' })
+  })
+
+type AadhaarFormValues = z.input<typeof aadhaarForm>
+
+/** The selected mode's uploads as the domain shape, or null when incomplete. */
+export function toAadhaarDocuments(a: AadhaarFormValues): AadhaarDocuments | null {
+  if (a.mode === 'pdf') return a.pdf ? { kind: 'pdf', file: a.pdf } : null
+  return a.front && a.back ? { kind: 'photos', front: a.front, back: a.back } : null
+}
 
 /**
  * Form-level schema for one team member. Student and working fields both live in the form
@@ -57,7 +82,7 @@ export function createMemberSchema(options: { otherMobiles?: string[] } = {}) {
         ELIGIBILITY_MESSAGES.madrasa,
       ),
       isAalim: yesNo('Please answer this question.').refine((v) => v !== 'yes', ELIGIBILITY_MESSAGES.aalim),
-      aadhaar: documentRef.nullable().refine((v) => v !== null, 'Please upload the Aadhaar card.'),
+      aadhaar: aadhaarForm,
     })
     .superRefine((v, ctx) => {
       const need = (field: 'courseDetails' | 'institution' | 'occupation' | 'employer', message: string) => {
@@ -88,7 +113,7 @@ export const emptyMemberForm: MemberFormValues = {
   employer: '',
   studyingInMadrasa: '',
   isAalim: '',
-  aadhaar: null,
+  aadhaar: { mode: 'photos', front: null, back: null, pdf: null },
 }
 
 /** Converts a fully validated form into the domain shape sent to the service layer. */
@@ -96,7 +121,8 @@ export function toMemberInput(values: MemberFormValues): MemberInput | null {
   const parsed = createMemberSchema().safeParse(values)
   if (!parsed.success) return null
   const v = parsed.data
-  if (v.aadhaar === null) return null
+  const aadhaar = toAadhaarDocuments(v.aadhaar)
+  if (!aadhaar) return null
   const base = {
     fullName: v.fullName,
     mobileNumber: normaliseMobile(v.mobileNumber),
@@ -105,7 +131,7 @@ export function toMemberInput(values: MemberFormValues): MemberInput | null {
     district: v.district,
     studyingInMadrasa: false,
     isAalim: false,
-    aadhaar: v.aadhaar,
+    aadhaar,
   }
   return v.participantStatus === 'student'
     ? { ...base, participantStatus: 'student', courseDetails: v.courseDetails, institution: v.institution }

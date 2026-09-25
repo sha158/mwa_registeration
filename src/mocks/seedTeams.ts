@@ -1,5 +1,5 @@
 import { formatRegistrationNumber } from '@/domain/registrationNumber'
-import type { District, MemberNumber, RegistrationStatus, Team, TeamMember } from '@/types/domain'
+import type { AadhaarDocuments, District, MemberNumber, RegistrationStatus, Team, TeamMember } from '@/types/domain'
 
 /**
  * Fictional test data. Names and numbers are invented; no Aadhaar numbers exist anywhere —
@@ -19,6 +19,20 @@ const ADDRESSES: Record<District, string> = {
   Udupi: 'Main Road, Kapu, Udupi 574106',
 }
 
+/** Members 1–2 upload card photos, member 3 the e-Aadhaar PDF, so both modes appear in the admin. */
+function seedAadhaar(teamId: string, memberNumber: MemberNumber, slug: string): AadhaarDocuments {
+  // The mock document service serves a placeholder image for any `seed-` reference.
+  const doc = (side: string, fileName: string) => ({
+    uploadId: `seed-${teamId}-${memberNumber}-${side}`,
+    fileName,
+    sizeBytes: 812_000,
+    mimeType: 'image/svg+xml',
+  })
+  return memberNumber === 3
+    ? { kind: 'pdf', file: doc('pdf', `e-aadhaar_${slug}.pdf`) }
+    : { kind: 'photos', front: doc('front', `aadhaar_front_${slug}.jpg`), back: doc('back', `aadhaar_back_${slug}.jpg`) }
+}
+
 function member(teamId: string, memberNumber: MemberNumber, seed: SeedMember): TeamMember {
   const [fullName, mobileNumber, dateOfBirth, district, role] = seed
   const slug = fullName.split(' ')[0]?.toLowerCase() ?? 'member'
@@ -33,7 +47,7 @@ function member(teamId: string, memberNumber: MemberNumber, seed: SeedMember): T
     residentialAddress: ADDRESSES[district],
     studyingInMadrasa: false,
     isAalim: false,
-    aadhaar: { uploadId: `seed-${teamId}-${memberNumber}`, fileName: `aadhaar_${slug}.pdf`, sizeBytes: 812_000, mimeType: 'image/svg+xml' },
+    aadhaar: seedAadhaar(teamId, memberNumber, slug),
   }
   return role[0] === 'student'
     ? { ...base, participantStatus: 'student', courseDetails: role[1], institution: role[2] }

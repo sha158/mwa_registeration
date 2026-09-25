@@ -54,9 +54,18 @@ export function MemberDetailCard({ member }: { member: TeamMember }) {
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-control bg-surface-low p-3">
         <p className="flex items-center gap-2 text-label font-semibold text-success">
           <CircleCheck aria-hidden className="size-4" />
-          Aadhaar uploaded
+          {member.aadhaar.kind === 'pdf' ? 'e-Aadhaar PDF' : 'Aadhaar front & back'}
         </p>
-        <DocumentViewer document={member.aadhaar} memberName={member.fullName} dateOfBirth={member.dateOfBirth} />
+        <div className="flex flex-wrap gap-2">
+          {member.aadhaar.kind === 'pdf' ? (
+            <DocumentViewer side="pdf" document={member.aadhaar.file} memberName={member.fullName} dateOfBirth={member.dateOfBirth} />
+          ) : (
+            <>
+              <DocumentViewer side="front" document={member.aadhaar.front} memberName={member.fullName} dateOfBirth={member.dateOfBirth} />
+              <DocumentViewer side="back" document={member.aadhaar.back} memberName={member.fullName} dateOfBirth={member.dateOfBirth} />
+            </>
+          )}
+        </div>
       </div>
     </section>
   )

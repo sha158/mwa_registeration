@@ -11,6 +11,7 @@ import {
   uploadAadhaar,
   type Client,
 } from './helpers'
+import type { Json } from '@/services/supabase/database.types'
 
 describe('register_team', () => {
   const anon = anonClient()
@@ -30,12 +31,18 @@ describe('register_team', () => {
 
     const { data } = await admin
       .from('teams')
-      .select('status, team_members(member_number, mobile_number, aadhaar_mime_type)')
+      .select('status, team_members(member_number, mobile_number, aadhaar_mime_type, aadhaar_back_mime_type)')
       .eq('registration_number', String(result.registration_number))
       .single()
     expect(data?.status).toBe('submitted')
-    expect(data?.team_members.map((m) => m.member_number).sort()).toEqual([1, 2, 3])
-    expect(data?.team_members.every((m) => m.aadhaar_mime_type === 'application/pdf')).toBe(true)
+    const byNumber = [...(data?.team_members ?? [])].sort((a, b) => a.member_number - b.member_number)
+    expect(byNumber.map((m) => m.member_number)).toEqual([1, 2, 3])
+    // Members 1–2: card photos (front + back). Member 3: e-Aadhaar PDF only.
+    expect(byNumber.map((m) => [m.aadhaar_mime_type, m.aadhaar_back_mime_type])).toEqual([
+      ['image/jpeg', 'image/jpeg'],
+      ['image/jpeg', 'image/jpeg'],
+      ['application/pdf', null],
+    ])
   })
 
   it('is idempotent for a retried submission', async () => {
@@ -96,6 +103,38 @@ describe('register_team', () => {
     const missing = `submissions/${team.submissionId}/member-1/${crypto.randomUUID()}.pdf`
     const members2 = [{ ...team.members[0], aadhaar_storage_path: missing }, team.members[1], team.members[2]]
     expect(await register(anon, { ...team, members: members2 })).toMatchObject({ ok: false, error: 'INVALID_DOCUMENT' })
+  })
+
+  it('requires the back of the card unless the front is the e-Aadhaar PDF', async () => {
+    const team = await prepareTeam(anon)
+    const noBack = { ...team.members[0], aadhaar_back_storage_path: null, aadhaar_back_file_name: null }
+    expect(await register(anon, { ...team, members: [noBack, team.members[1], team.members[2]] })).toMatchObject({
+      ok: false,
+      error: 'INVALID_DOCUMENT',
+      member_number: 1,
+      side: 'back',
+    })
+  })
+
+  it('rejects a back side that reuses the front file or belongs to another submission', async () => {
+    const team = await prepareTeam(anon)
+    const m2 = team.members[1] as Record<string, Json>
+    const sameFile = { ...m2, aadhaar_back_storage_path: m2.aadhaar_storage_path }
+    expect(await register(anon, { ...team, members: [team.members[0], sameFile, team.members[2]] })).toMatchObject({
+      ok: false,
+      error: 'INVALID_DOCUMENT',
+      member_number: 2,
+      side: 'back',
+    })
+
+    const foreign = await uploadAadhaar(anon, crypto.randomUUID(), 2, 'jpeg')
+    const foreignBack = { ...m2, aadhaar_back_storage_path: foreign }
+    expect(await register(anon, { ...team, members: [team.members[0], foreignBack, team.members[2]] })).toMatchObject({
+      ok: false,
+      error: 'INVALID_DOCUMENT',
+      member_number: 2,
+      side: 'back',
+    })
   })
 
   it('rejects the same mobile twice within a team', async () => {

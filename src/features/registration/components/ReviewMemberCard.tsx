@@ -56,7 +56,7 @@ export function ReviewMemberCard({ member, memberNumber }: { member: MemberInput
         </li>
         <li className="flex items-center gap-2.5 font-semibold text-success">
           <CircleCheck aria-hidden className="size-4 shrink-0" />
-          Aadhaar uploaded
+          {member.aadhaar.kind === 'pdf' ? 'e-Aadhaar PDF uploaded' : 'Aadhaar front & back uploaded'}
         </li>
       </ul>
     </section>

@@ -1,5 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, ArrowRight, BadgeCheck, Briefcase, GraduationCap, IdCard, Scale, UserRound } from 'lucide-react'
+import {
+  ArrowLeft,
+  ArrowRight,
+  BadgeCheck,
+  Briefcase,
+  Camera,
+  FileText,
+  GraduationCap,
+  IdCard,
+  LockKeyhole,
+  Scale,
+  UserRound,
+} from 'lucide-react'
 import { useEffect, useMemo } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { useNavigate } from 'react-router'
@@ -14,7 +26,7 @@ import { checkAge } from '@/domain/age'
 import type { MemberNumber } from '@/types/domain'
 import { createMemberSchema, emptyMemberForm } from '@/validation/memberSchema'
 import { otherMobiles, useRegistrationStore } from '../store'
-import { AadhaarUpload } from './AadhaarUpload'
+import { DocumentUploadSlot } from './DocumentUploadSlot'
 import { StepActions } from './StepActions'
 import { StepperCard } from './Stepper'
 
@@ -54,9 +66,9 @@ export function MemberForm({ memberNumber: n }: { memberNumber: MemberNumber }) 
     [subscribe, saveMember, n],
   )
 
-  const [dateOfBirth, participantStatus, studyingInMadrasa, isAalim] = useWatch({
+  const [dateOfBirth, participantStatus, studyingInMadrasa, isAalim, aadhaarMode] = useWatch({
     control,
-    name: ['dateOfBirth', 'participantStatus', 'studyingInMadrasa', 'isAalim'],
+    name: ['dateOfBirth', 'participantStatus', 'studyingInMadrasa', 'isAalim', 'aadhaar.mode'],
   })
   const age = dateOfBirth ? checkAge(dateOfBirth) : null
   const ineligible = age?.status === 'too-old' || age?.status === 'too-young' || studyingInMadrasa === 'yes' || isAalim === 'yes'
@@ -217,24 +229,72 @@ export function MemberForm({ memberNumber: n }: { memberNumber: MemberNumber }) 
       </SectionCard>
 
       <SectionCard icon={<IdCard />} title="Aadhaar card" titleId="aadhaar">
-        <p className="-mt-2 text-small text-ink-muted">Upload the side showing name, photo and date of birth.</p>
-        <Controller
-          control={control}
-          name="aadhaar"
-          render={({ field, fieldState }) => (
-            <AadhaarUpload
-              memberNumber={n}
-              value={field.value ?? null}
-              onChange={(ref) => {
-                field.onChange(ref)
-                void trigger('aadhaar')
-              }}
-              onBlur={field.onBlur}
-              focusRef={field.ref}
-              error={fieldState.error?.message}
-            />
-          )}
+        <p className="-mt-2 text-small text-ink-muted">
+          The card must clearly show the <strong className="font-semibold text-ink">full name, date of birth and address</strong>.
+          The address is on the back.
+        </p>
+        <ChoiceGroup
+          legend="Upload as"
+          appearance="segmented"
+          inputProps={register('aadhaar.mode')}
+          options={[
+            { value: 'photos', label: 'Card photos', icon: <Camera aria-hidden className="size-[18px]" /> },
+            { value: 'pdf', label: 'e-Aadhaar PDF', icon: <FileText aria-hidden className="size-[18px]" /> },
+          ]}
         />
+        {aadhaarMode === 'pdf' ? (
+          <>
+            <p className="text-small text-ink-muted">The e-Aadhaar PDF downloaded from UIDAI already shows both sides.</p>
+            <Controller
+              control={control}
+              name="aadhaar.pdf"
+              render={({ field, fieldState }) => (
+                <DocumentUploadSlot
+                  memberNumber={n}
+                  kind="pdf"
+                  label="e-Aadhaar PDF"
+                  value={field.value}
+                  onChange={(ref) => {
+                    field.onChange(ref)
+                    void trigger('aadhaar.pdf')
+                  }}
+                  onBlur={field.onBlur}
+                  focusRef={field.ref}
+                  error={fieldState.error?.message}
+                />
+              )}
+            />
+          </>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {(['front', 'back'] as const).map((side) => (
+              <Controller
+                key={side}
+                control={control}
+                name={`aadhaar.${side}`}
+                render={({ field, fieldState }) => (
+                  <DocumentUploadSlot
+                    memberNumber={n}
+                    kind="photo"
+                    label={side === 'front' ? 'Front side' : 'Back side'}
+                    value={field.value}
+                    onChange={(ref) => {
+                      field.onChange(ref)
+                      void trigger(`aadhaar.${side}`)
+                    }}
+                    onBlur={field.onBlur}
+                    focusRef={field.ref}
+                    error={fieldState.error?.message}
+                  />
+                )}
+              />
+            ))}
+          </div>
+        )}
+        <p className="flex items-start gap-2 text-small text-ink-muted">
+          <LockKeyhole aria-hidden className="mt-0.5 size-4 shrink-0 text-brand" />
+          Stored privately and used only to verify age, identity and address. It is never shown publicly.
+        </p>
       </SectionCard>
 
       <StepActions

@@ -1,4 +1,4 @@
-import { Headset } from 'lucide-react'
+import { Headset, MapPin } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Logo } from '@/components/ui/Logo'
@@ -12,7 +12,8 @@ export function SiteHeader({
   trailing,
   width = 'page',
 }: {
-  title: ReactNode
+  /** Omit when `leading` already carries the heading content. */
+  title?: ReactNode
   leading?: ReactNode
   trailing?: ReactNode
   width?: 'form' | 'page' | 'admin'
@@ -31,14 +32,35 @@ export function SiteHeader({
               <Logo decorative className="size-10 border border-line p-0.5" />
             </Link>
           )}
-          <div className="flex min-w-0 flex-col">
-            <span className="truncate text-overline font-bold tracking-wider text-gold uppercase">{EVENT.shortName}</span>
-            <span className="truncate text-heading leading-tight font-semibold text-ink">{title}</span>
-          </div>
+          {title !== undefined && (
+            <div className="flex min-w-0 flex-col">
+              <span className="truncate text-overline font-bold tracking-wider text-gold uppercase">{EVENT.shortName}</span>
+              <span className="truncate text-heading leading-tight font-semibold text-ink">{title}</span>
+            </div>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-1">{trailing}</div>
       </div>
     </header>
+  )
+}
+
+/** Logo, organiser name and location — the public site's header brand. */
+export function OrganiserBrand() {
+  return (
+    <Link to="/" className="flex min-w-0 items-center gap-2.5 rounded-control" aria-label={`${EVENT.name} home`}>
+      <Logo decorative className="size-11 shrink-0 border border-line p-0.5" />
+      <span className="flex min-w-0 flex-col">
+        <span className="text-label leading-tight font-bold text-ink sm:text-heading sm:leading-tight">
+          {EVENT.organiser}
+          <sup className="ml-0.5 text-[0.6em] font-semibold">®</sup>
+        </span>
+        <span className="mt-0.5 flex items-center gap-1 text-caption font-semibold text-gold">
+          <MapPin aria-hidden className="size-3.5 shrink-0" />
+          {EVENT.location}
+        </span>
+      </span>
+    </Link>
   )
 }
 

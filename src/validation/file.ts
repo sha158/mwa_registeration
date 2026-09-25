@@ -1,20 +1,35 @@
-import { AADHAAR_FILE } from '@/config/event'
+import { AADHAAR_FILE, AADHAAR_UPLOAD } from '@/config/event'
 
 const MAX_MB = AADHAAR_FILE.maxBytes / (1024 * 1024)
 
-/** Returns a user-facing error, or null when the file is acceptable. */
-export function validateAadhaarFile(file: File): string | null {
+/** Which kind of Aadhaar file an upload slot takes. */
+export type AadhaarUploadKind = keyof typeof AADHAAR_UPLOAD
+
+/** Returns a user-facing error, or null when the file looks acceptable for this slot. */
+export function validateAadhaarFile(file: File, kind: AadhaarUploadKind): string | null {
+  const allowed = AADHAAR_UPLOAD[kind]
   const name = file.name.toLowerCase()
   const typeOk =
-    (AADHAAR_FILE.mimeTypes as readonly string[]).includes(file.type) ||
-    AADHAAR_FILE.extensions.some((ext) => name.endsWith(ext))
-  if (!typeOk) return 'Please upload a JPG, PNG or PDF file.'
+    (allowed.mimeTypes as readonly string[]).includes(file.type) || allowed.extensions.some((ext) => name.endsWith(ext))
+  if (!typeOk) return `Please upload a ${allowed.label} file.`
   if (file.size === 0) return 'This file appears to be empty. Please choose another file.'
   if (file.size > AADHAAR_FILE.maxBytes) return `File is too large. Maximum size is ${MAX_MB} MB.`
   return null
 }
 
-export const AADHAAR_ACCEPT = [...AADHAAR_FILE.mimeTypes, ...AADHAAR_FILE.extensions].join(',')
+/** Checks the file's actual contents, not its name. Returns a user-facing error or null. */
+export async function checkAadhaarContents(file: Blob, kind: AadhaarUploadKind): Promise<string | null> {
+  const type = await detectAadhaarType(file)
+  const allowed = AADHAAR_UPLOAD[kind]
+  return type && (allowed.mimeTypes as readonly string[]).includes(type)
+    ? null
+    : `This file is not a valid ${allowed.label}. Please choose another file.`
+}
+
+export function aadhaarAccept(kind: AadhaarUploadKind): string {
+  const allowed = AADHAAR_UPLOAD[kind]
+  return [...allowed.mimeTypes, ...allowed.extensions].join(',')
+}
 
 export type AadhaarMimeType = (typeof AADHAAR_FILE.mimeTypes)[number]
 

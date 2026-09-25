@@ -30,6 +30,10 @@ describe('register_team result mapping', () => {
       error: 'VALIDATION_FAILED',
       memberNumber: 3,
     })
+    expect(submitResultFromRpc({ ok: false, error: 'INVALID_DOCUMENT', member_number: 2, side: 'back' })).toMatchObject({
+      memberNumber: 2,
+      message: 'Member 2: The back of the Aadhaar could not be verified. Please upload it again.',
+    })
   })
 
   it('never leaks unknown backend responses', () => {
@@ -44,6 +48,10 @@ describe('row mapping', () => {
     aadhaar_mime_type: 'application/pdf',
     aadhaar_size_bytes: 1000,
     aadhaar_storage_path: 'submissions/x/member-2/y.pdf',
+    aadhaar_back_file_name: null,
+    aadhaar_back_mime_type: null,
+    aadhaar_back_size_bytes: null,
+    aadhaar_back_storage_path: null,
     course_details: null,
     created_at: '',
     date_of_birth: '2001-01-01',
@@ -76,8 +84,42 @@ describe('row mapping', () => {
       team_members: [member, { ...member, id: 'm1', member_number: 1 }],
     })
     expect(team.members.map((m) => m.memberNumber)).toEqual([1, 2])
-    expect(team.members[1]).toMatchObject({ participantStatus: 'working', occupation: 'Clerk', aadhaar: { uploadId: member.aadhaar_storage_path, mimeType: 'application/pdf' } })
+    expect(team.members[1]).toMatchObject({
+      participantStatus: 'working',
+      occupation: 'Clerk',
+      aadhaar: { kind: 'pdf', file: { uploadId: member.aadhaar_storage_path, mimeType: 'application/pdf' } },
+    })
     expect(team.adminNote).toBeUndefined()
+  })
+
+  it('maps a member with a back side as front/back photos', () => {
+    const team = teamFromRow({
+      id: 't1',
+      registration_number: 'MWA-001',
+      status: 'submitted',
+      admin_note: null,
+      consented_at: '',
+      created_at: '',
+      submission_id: 's',
+      updated_at: '',
+      team_members: [
+        {
+          ...member,
+          aadhaar_file_name: 'front.jpg',
+          aadhaar_mime_type: 'image/jpeg',
+          aadhaar_storage_path: 'f.jpg',
+          aadhaar_back_file_name: 'back.png',
+          aadhaar_back_mime_type: 'image/png',
+          aadhaar_back_size_bytes: 2000,
+          aadhaar_back_storage_path: 'b.png',
+        },
+      ],
+    })
+    expect(team.members[0]?.aadhaar).toEqual({
+      kind: 'photos',
+      front: { uploadId: 'f.jpg', fileName: 'front.jpg', sizeBytes: 1000, mimeType: 'image/jpeg' },
+      back: { uploadId: 'b.png', fileName: 'back.png', sizeBytes: 2000, mimeType: 'image/png' },
+    })
   })
 
   it('sends only the active status fields to register_team', () => {
@@ -93,10 +135,46 @@ describe('row mapping', () => {
         participantStatus: 'student',
         courseDetails: 'B.Com',
         institution: 'MGM',
-        aadhaar: { uploadId: 'p', fileName: 'f.pdf', sizeBytes: 1 },
+        aadhaar: { kind: 'pdf', file: { uploadId: 'p', fileName: 'f.pdf', sizeBytes: 1 } },
       },
       1,
     )
-    expect(rpc).toMatchObject({ member_number: 1, course_details: 'B.Com', occupation: null, employer: null, aadhaar_storage_path: 'p' })
+    expect(rpc).toMatchObject({
+      member_number: 1,
+      course_details: 'B.Com',
+      occupation: null,
+      employer: null,
+      aadhaar_storage_path: 'p',
+      aadhaar_back_storage_path: null,
+    })
+  })
+
+  it('sends both sides for card photos', () => {
+    const rpc = memberToRpc(
+      {
+        fullName: 'A B C',
+        mobileNumber: '9876543210',
+        dateOfBirth: '2001-01-01',
+        residentialAddress: 'Main Road, Kapu',
+        district: 'Udupi',
+        studyingInMadrasa: false,
+        isAalim: false,
+        participantStatus: 'working',
+        occupation: 'Clerk',
+        employer: 'Bank',
+        aadhaar: {
+          kind: 'photos',
+          front: { uploadId: 'f', fileName: 'front.jpg', sizeBytes: 1 },
+          back: { uploadId: 'b', fileName: 'back.jpg', sizeBytes: 1 },
+        },
+      },
+      2,
+    )
+    expect(rpc).toMatchObject({
+      aadhaar_storage_path: 'f',
+      aadhaar_file_name: 'front.jpg',
+      aadhaar_back_storage_path: 'b',
+      aadhaar_back_file_name: 'back.jpg',
+    })
   })
 })

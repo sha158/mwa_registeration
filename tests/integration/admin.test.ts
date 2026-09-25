@@ -97,10 +97,25 @@ describe('admin', () => {
     expect(participantsText).not.toContain('aadhaar')
   })
 
-  it('lists abandoned uploads (older than the threshold) without referenced files', async () => {
+  it('lists abandoned uploads (older than the threshold) without referenced front or back files', async () => {
     const { data } = await admin.rpc('admin_list_orphan_uploads', { p_older_than: '0 seconds' })
     const paths = (data as { paths: string[] }).paths
-    const { data: member } = await admin.from('team_members').select('aadhaar_storage_path').eq('team_id', teamId).limit(1).single()
-    expect(paths).not.toContain(member?.aadhaar_storage_path)
+    const { data: members } = await admin
+      .from('team_members')
+      .select('aadhaar_storage_path, aadhaar_back_storage_path')
+      .eq('team_id', teamId)
+    const referenced = (members ?? []).flatMap((m) => [m.aadhaar_storage_path, m.aadhaar_back_storage_path]).filter(Boolean)
+    expect(referenced).toHaveLength(5) // 2 members × front + back, 1 member × PDF
+    for (const path of referenced) expect(paths).not.toContain(path)
+  })
+
+  it('returns every front and back path when a team is deleted', async () => {
+    const result = await register(anonClient(), await prepareTeam(anonClient()))
+    const { data: team } = await admin.from('teams').select('id').eq('registration_number', String(result.registration_number)).single()
+    const { data } = await admin.rpc('admin_delete_team', { p_team_id: team?.id ?? '' })
+    const deleted = data as { ok: boolean; storage_paths: string[] }
+    expect(deleted.ok).toBe(true)
+    expect(deleted.storage_paths).toHaveLength(5)
+    expect(deleted.storage_paths.every((p) => typeof p === 'string' && p.startsWith('submissions/'))).toBe(true)
   })
 })

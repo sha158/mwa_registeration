@@ -1,7 +1,9 @@
 import { AGE_MESSAGE } from '@/domain/age'
 import { ELIGIBILITY_MESSAGES } from '@/domain/eligibility'
 import type {
+  AadhaarDocuments,
   DashboardStats,
+  DocumentRef,
   District,
   MemberInput,
   MemberNumber,
@@ -39,16 +41,32 @@ export function memberFromRow(row: MemberRow): TeamMember {
     district: row.district as District,
     studyingInMadrasa: row.studying_in_madrasa,
     isAalim: row.is_aalim,
-    aadhaar: {
-      uploadId: row.aadhaar_storage_path,
-      fileName: row.aadhaar_file_name,
-      sizeBytes: row.aadhaar_size_bytes,
-      mimeType: row.aadhaar_mime_type,
-    },
+    aadhaar: aadhaarFromRow(row),
   }
   return row.participant_status === 'student'
     ? { ...base, participantStatus: 'student', courseDetails: row.course_details ?? '', institution: row.institution ?? '' }
     : { ...base, participantStatus: 'working', occupation: row.occupation ?? '', employer: row.employer ?? '' }
+}
+
+/** No back side means the front is the e-Aadhaar PDF (enforced by a table constraint). */
+function aadhaarFromRow(row: MemberRow): AadhaarDocuments {
+  const front: DocumentRef = {
+    uploadId: row.aadhaar_storage_path,
+    fileName: row.aadhaar_file_name,
+    sizeBytes: row.aadhaar_size_bytes,
+    mimeType: row.aadhaar_mime_type,
+  }
+  if (row.aadhaar_back_storage_path === null) return { kind: 'pdf', file: front }
+  return {
+    kind: 'photos',
+    front,
+    back: {
+      uploadId: row.aadhaar_back_storage_path,
+      fileName: row.aadhaar_back_file_name ?? '',
+      sizeBytes: row.aadhaar_back_size_bytes ?? 0,
+      mimeType: row.aadhaar_back_mime_type ?? undefined,
+    },
+  }
 }
 
 export function teamFromRow(row: TeamRow): Team {
@@ -77,6 +95,9 @@ export function statsFromRpc(value: Json | null): DashboardStats {
 
 export function memberToRpc(member: MemberInput, memberNumber: MemberNumber): Json {
   const student = member.participantStatus === 'student'
+  const { aadhaar } = member
+  const front = aadhaar.kind === 'photos' ? aadhaar.front : aadhaar.file
+  const back = aadhaar.kind === 'photos' ? aadhaar.back : null
   return {
     member_number: memberNumber,
     full_name: member.fullName,
@@ -91,8 +112,10 @@ export function memberToRpc(member: MemberInput, memberNumber: MemberNumber): Js
     employer: student ? null : member.employer,
     studying_in_madrasa: member.studyingInMadrasa,
     is_aalim: member.isAalim,
-    aadhaar_storage_path: member.aadhaar.uploadId,
-    aadhaar_file_name: member.aadhaar.fileName,
+    aadhaar_storage_path: front.uploadId,
+    aadhaar_file_name: front.fileName,
+    aadhaar_back_storage_path: back?.uploadId ?? null,
+    aadhaar_back_file_name: back?.fileName ?? null,
   }
 }
 
@@ -130,13 +153,15 @@ export function submitResultFromRpc(value: Json | null): SubmitResult {
       const numbers = Array.isArray(o.member_numbers) ? o.member_numbers.filter(isMemberNumber) : []
       return { ok: false, error: 'DUPLICATE_PARTICIPANT', memberNumbers: numbers }
     }
-    case 'INVALID_DOCUMENT':
+    case 'INVALID_DOCUMENT': {
+      const what = o.side === 'back' ? 'The back of the Aadhaar' : 'The Aadhaar upload'
       return {
         ok: false,
         error: 'VALIDATION_FAILED',
         memberNumber,
-        message: `${prefix}The Aadhaar upload could not be verified. Please upload it again.`,
+        message: `${prefix}${what} could not be verified. Please upload it again.`,
       }
+    }
     case 'INVALID_ELIGIBILITY':
     case 'INVALID_INPUT': {
       const field = typeof o.field === 'string' ? o.field : ''

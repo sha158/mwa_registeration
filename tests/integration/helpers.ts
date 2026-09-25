@@ -24,14 +24,27 @@ export async function adminClient(): Promise<Client> {
 export const randomMobile = () => `9${Math.floor(100_000_000 + Math.random() * 899_999_999)}`
 
 const PDF = new TextEncoder().encode('%PDF-1.4\n% integration test document (not a real ID)\n')
+/** JPEG signature plus filler: enough for type checks, not a real image or ID. */
+const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, ...new TextEncoder().encode('integration test image')])
+
+const FILES = {
+  pdf: { bytes: PDF, type: 'application/pdf', ext: 'pdf' },
+  jpeg: { bytes: JPEG, type: 'image/jpeg', ext: 'jpg' },
+} as const
 
 /** Everything a test run creates, so it can be removed afterwards. */
 export const created = { teamRegistrationNumbers: new Set<string>(), uploadPaths: new Set<string>() }
 
-export async function uploadAadhaar(client: Client, submissionId: string, memberNumber: number): Promise<string> {
-  const path = `submissions/${submissionId}/member-${memberNumber}/${crypto.randomUUID()}.pdf`
-  const { error } = await client.storage.from(BUCKET).upload(path, new Blob([PDF], { type: 'application/pdf' }), {
-    contentType: 'application/pdf',
+export async function uploadAadhaar(
+  client: Client,
+  submissionId: string,
+  memberNumber: number,
+  kind: keyof typeof FILES = 'pdf',
+): Promise<string> {
+  const file = FILES[kind]
+  const path = `submissions/${submissionId}/member-${memberNumber}/${crypto.randomUUID()}.${file.ext}`
+  const { error } = await client.storage.from(BUCKET).upload(path, new Blob([file.bytes], { type: file.type }), {
+    contentType: file.type,
     upsert: false,
   })
   if (error) throw new Error(`upload failed: ${error.message}`)
@@ -41,7 +54,13 @@ export async function uploadAadhaar(client: Client, submissionId: string, member
 
 type MemberOverrides = Partial<Record<string, Json>>
 
-export function member(n: number, aadhaarPath: string, overrides: MemberOverrides = {}): { [key: string]: Json } {
+/** Front path, plus a back path for card photos (omitted for an e-Aadhaar PDF). */
+export interface AadhaarPaths {
+  front: string
+  back?: string
+}
+
+export function member(n: number, aadhaar: AadhaarPaths, overrides: MemberOverrides = {}): { [key: string]: Json } {
   return {
     member_number: n,
     full_name: `Test Participant ${'ABC'[n - 1]}`,
@@ -56,20 +75,34 @@ export function member(n: number, aadhaarPath: string, overrides: MemberOverride
     employer: null,
     studying_in_madrasa: false,
     is_aalim: false,
-    aadhaar_storage_path: aadhaarPath,
-    aadhaar_file_name: `aadhaar_member_${n}.pdf`,
+    aadhaar_storage_path: aadhaar.front,
+    aadhaar_file_name: aadhaar.back ? `aadhaar_front_${n}.jpg` : `e-aadhaar_${n}.pdf`,
+    aadhaar_back_storage_path: aadhaar.back ?? null,
+    aadhaar_back_file_name: aadhaar.back ? `aadhaar_back_${n}.jpg` : null,
     ...overrides,
   }
 }
 
 export const CONSENT = { eligibility: true, accuracy: true, data_use: true }
 
-/** Uploads three documents and returns a valid team payload for a new submission. */
+/** Uploads card photos (front + back) for member n. */
+export async function uploadPhotos(client: Client, submissionId: string, n: number): Promise<AadhaarPaths> {
+  return {
+    front: await uploadAadhaar(client, submissionId, n, 'jpeg'),
+    back: await uploadAadhaar(client, submissionId, n, 'jpeg'),
+  }
+}
+
+/**
+ * Uploads documents and returns a valid team payload for a new submission. Members 1–2 use
+ * card photos (front + back), member 3 the e-Aadhaar PDF, so both modes are always exercised.
+ */
 export async function prepareTeam(client: Client, overrides: MemberOverrides[] = []) {
   const submissionId = crypto.randomUUID()
   const members = []
   for (const n of [1, 2, 3]) {
-    members.push(member(n, await uploadAadhaar(client, submissionId, n), overrides[n - 1]))
+    const docs = n === 3 ? { front: await uploadAadhaar(client, submissionId, n, 'pdf') } : await uploadPhotos(client, submissionId, n)
+    members.push(member(n, docs, overrides[n - 1]))
   }
   return { submissionId, members }
 }

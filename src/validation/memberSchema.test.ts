@@ -15,7 +15,19 @@ const valid: MemberFormValues = {
   institution: 'St. Aloysius College',
   studyingInMadrasa: 'no',
   isAalim: 'no',
-  aadhaar: { uploadId: 'u1', fileName: 'a.pdf', sizeBytes: 1000 },
+  aadhaar: {
+    mode: 'photos',
+    front: { uploadId: 'front', fileName: 'front.jpg', sizeBytes: 1000 },
+    back: { uploadId: 'back', fileName: 'back.jpg', sizeBytes: 1000 },
+    pdf: null,
+  },
+}
+
+const pdfOnly: MemberFormValues['aadhaar'] = {
+  mode: 'pdf',
+  front: null,
+  back: null,
+  pdf: { uploadId: 'pdf', fileName: 'e-aadhaar.pdf', sizeBytes: 1000 },
 }
 
 const errorPaths = (values: MemberFormValues, otherMobiles?: string[]) => {
@@ -37,6 +49,23 @@ describe('member schema', () => {
     expect(errorPaths({ ...valid, studyingInMadrasa: 'yes' })).toEqual(['studyingInMadrasa'])
     expect(errorPaths({ ...valid, isAalim: 'yes' })).toEqual(['isAalim'])
     expect(errorPaths({ ...valid, dateOfBirth: '2012-01-01' })).toEqual(['dateOfBirth'])
+  })
+
+  it('requires both sides for card photos', () => {
+    expect(errorPaths({ ...valid, aadhaar: { ...valid.aadhaar, back: null } })).toEqual(['aadhaar.back'])
+    expect(errorPaths({ ...valid, aadhaar: { ...valid.aadhaar, front: null, back: null } })).toEqual([
+      'aadhaar.front',
+      'aadhaar.back',
+    ])
+    expect(toMemberInput(valid)?.aadhaar).toEqual({ kind: 'photos', front: valid.aadhaar.front, back: valid.aadhaar.back })
+  })
+
+  it('accepts the e-Aadhaar PDF alone, and validates only the selected mode', () => {
+    expect(errorPaths({ ...valid, aadhaar: pdfOnly })).toEqual([])
+    expect(toMemberInput({ ...valid, aadhaar: pdfOnly })?.aadhaar).toEqual({ kind: 'pdf', file: pdfOnly.pdf })
+    // Photos uploaded earlier are kept but ignored once the PDF mode is chosen, and vice versa.
+    expect(toMemberInput({ ...valid, aadhaar: { ...valid.aadhaar, mode: 'pdf', pdf: pdfOnly.pdf } })?.aadhaar.kind).toBe('pdf')
+    expect(errorPaths({ ...valid, aadhaar: { ...pdfOnly, pdf: null } })).toEqual(['aadhaar.pdf'])
   })
 
   it('validates mobile numbers and duplicates within a team', () => {

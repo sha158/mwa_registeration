@@ -4,7 +4,7 @@ import { Link, useLoaderData } from 'react-router'
 import type { successLoader } from '@/app/loaders'
 import { Button } from '@/components/ui/Button'
 import { Logo } from '@/components/ui/Logo'
-import { EVENT } from '@/config/event'
+import { CONTACTS, EVENT } from '@/config/event'
 import { downloadBlob, formatDateTime, formatLongDate } from '@/utils/format'
 
 export default function SuccessPage() {
@@ -32,7 +32,9 @@ export default function SuccessPage() {
       '',
       `Competition day: ${formatLongDate(EVENT.date)}, reporting at ${EVENT.reportingTime}`,
       `Venue: ${EVENT.venue}`,
-      `Helpline: ${EVENT.helplineDisplay}`,
+      `Contact: ${CONTACTS.map((c) => c.display).join(' / ')}`,
+      '',
+      `${EVENT.organiser}, ${EVENT.location}`,
     ]
     downloadBlob(new Blob([lines.join('\n')], { type: 'text/plain' }), `${result.registrationNumber}-registration.txt`)
   }

@@ -36,8 +36,8 @@ export const useRegistrationStore = create<RegistrationState>()(
     }),
     {
       name: 'mwa.registrationDraft',
-      version: 2,
-      // v1 drafts had no submission id and mock-only upload references: start fresh.
+      version: 3,
+      // Older drafts (v1: no submission id; v2: a single Aadhaar file) are not compatible: start fresh.
       migrate: () => ({ submissionId: crypto.randomUUID(), members: {}, success: null }),
       storage: createJSONStorage(() => sessionStorage),
       partialize: (s) => ({ submissionId: s.submissionId, members: s.members, success: s.success }),

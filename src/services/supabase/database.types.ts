@@ -70,6 +70,10 @@ export type Database = {
       }
       team_members: {
         Row: {
+          aadhaar_back_file_name: string | null
+          aadhaar_back_mime_type: string | null
+          aadhaar_back_size_bytes: number | null
+          aadhaar_back_storage_path: string | null
           aadhaar_file_name: string
           aadhaar_mime_type: string
           aadhaar_size_bytes: number
@@ -93,6 +97,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aadhaar_back_file_name?: string | null
+          aadhaar_back_mime_type?: string | null
+          aadhaar_back_size_bytes?: number | null
+          aadhaar_back_storage_path?: string | null
           aadhaar_file_name: string
           aadhaar_mime_type: string
           aadhaar_size_bytes: number
@@ -116,6 +124,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aadhaar_back_file_name?: string | null
+          aadhaar_back_mime_type?: string | null
+          aadhaar_back_size_bytes?: number | null
+          aadhaar_back_storage_path?: string | null
           aadhaar_file_name?: string
           aadhaar_mime_type?: string
           aadhaar_size_bytes?: number

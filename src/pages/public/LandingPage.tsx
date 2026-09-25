@@ -7,6 +7,7 @@ import {
   Gift,
   ListChecks,
   ShieldCheck,
+  Trophy,
   UserRoundPlus,
   UsersRound,
   Utensils,
@@ -14,9 +15,9 @@ import {
 import type { ReactNode } from 'react'
 import { Link, useLoaderData } from 'react-router'
 import { ButtonLink } from '@/components/ui/Button'
-import { Logo } from '@/components/ui/Logo'
-import { EVENT, LIMITS } from '@/config/event'
+import { BOOK, EVENT, LIMITS } from '@/config/event'
 import { canRegister } from '@/domain/availability'
+import { BookAuthor } from '@/features/public/BookAuthor'
 import { CapacityCard } from '@/features/public/CapacityCard'
 import { BIRTH_RANGE_TEXT, ELIGIBLE, NOT_ELIGIBLE } from '@/features/public/content'
 import { RegistrationClosedCard } from '@/features/public/RegistrationClosedCard'
@@ -31,14 +32,26 @@ export default function LandingPage() {
     <div className="mx-auto flex max-w-page flex-col gap-10 px-4 pt-6 pb-12 sm:px-6 lg:gap-14 lg:pt-12">
       {/* Hero */}
       <section className="mx-auto flex w-full max-w-xl flex-col items-center text-center">
-        <Logo className="size-20 p-1.5 shadow-card" />
-        <p className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-gold-soft px-3 py-1 text-overline font-bold tracking-wider text-gold uppercase">
+        <p className="inline-flex items-center gap-1.5 rounded-full bg-gold-soft px-3 py-1 text-overline font-bold tracking-wider text-gold uppercase">
           <span aria-hidden className="size-1.5 rounded-full bg-gold-dot" />
-          District Youth Quiz Competition
+          {EVENT.level}
         </p>
-        <h1 className="mt-3 text-display font-bold text-ink lg:text-display-lg">{EVENT.name}</h1>
-        <p className="mt-2 text-body-lg font-medium text-ink">Register your {LIMITS.teamSize}-member team</p>
-        <p className="text-body text-ink-muted">{EVENT.region}</p>
+        <h1 className="mt-4 flex items-center gap-2.5 text-display font-bold text-ink lg:text-display-lg">
+          <Trophy aria-hidden className="size-8 shrink-0 text-gold-dot lg:size-10" />
+          {EVENT.name}
+        </h1>
+        <p className="mt-2 text-body-lg font-semibold text-brand">{EVENT.tagline}</p>
+
+        <div className="mt-5 flex w-full flex-col items-center gap-1 rounded-card border border-gold-dot/40 bg-gold-soft/50 px-4 py-4">
+          <span className="text-overline font-bold tracking-wider text-gold uppercase">Based on</span>
+          <p className="text-heading font-bold text-ink">“{BOOK.title}”</p>
+          <p className="text-small text-ink-muted">
+            By <BookAuthor />
+          </p>
+        </div>
+
+        <p className="mt-4 text-body font-medium text-ink">{EVENT.audience}</p>
+        <p className="text-body text-ink-muted">Register your {LIMITS.teamSize}-member team</p>
 
         <ul className="mt-5 grid w-full grid-cols-2 gap-2 sm:grid-cols-4" aria-label="At a glance">
           <Highlight>{LIMITS.maxTeams} teams only</Highlight>
@@ -89,12 +102,30 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Syllabus */}
+      <section aria-labelledby="syllabus" className="flex flex-col gap-3">
+        <SectionTitle id="syllabus">Syllabus</SectionTitle>
+        <div className="card flex items-start gap-4 p-4 sm:p-5">
+          <span aria-hidden className="grid size-12 shrink-0 place-items-center rounded-control bg-brand text-white">
+            <BookOpen className="size-6" />
+          </span>
+          <div className="flex flex-col gap-1">
+            <span className="text-caption font-semibold text-ink-muted">Prescribed book</span>
+            <p className="text-heading font-bold text-ink">“{BOOK.title}”</p>
+            <p className="text-small text-ink-muted">
+              By <BookAuthor />
+            </p>
+            <p className="mt-1 text-body text-ink">All questions are based exclusively on this book.</p>
+          </div>
+        </div>
+      </section>
+
       {/* Key facts */}
       <section aria-labelledby="facts" className="flex flex-col gap-3">
         <SectionTitle id="facts">Competition day</SectionTitle>
         <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Fact icon={<Clock />} label="Reporting time" value={EVENT.reportingTime} />
-          <Fact icon={<BookOpen />} label="Syllabus" value="Prescribed book" />
+          <Fact icon={<BookOpen />} label="Syllabus" value={BOOK.title} />
           <Fact icon={<Utensils />} label="Food" value="Breakfast & lunch" />
           <Fact icon={<Gift />} label="For every participant" value="Memento" />
         </ul>
@@ -113,7 +144,8 @@ export default function LandingPage() {
                 Name, mobile number, date of birth, address and college or work details.
               </Step>
               <Step n={2} title="Aadhaar card of each member">
-                A clear photo or PDF — JPG, PNG or PDF, up to 2 MB each.
+                Clear photos of the front and back (JPG or PNG), or the e-Aadhaar PDF — up to 2 MB each. Name, date of
+                birth and address must be readable.
               </Step>
               <Step n={3} title="About 5 minutes">
                 Slots are confirmed only when you submit, so finish in one go.
@@ -121,7 +153,7 @@ export default function LandingPage() {
             </ol>
             <p className="flex items-center gap-2.5 rounded-control bg-surface-low p-3 text-small text-ink-muted">
               <ShieldCheck aria-hidden className="size-[18px] shrink-0 text-brand" />
-              Aadhaar copies are stored privately and used only for age and identity verification.
+              Aadhaar copies are stored privately and used only to verify age, identity and address.
             </p>
           </section>
         )}

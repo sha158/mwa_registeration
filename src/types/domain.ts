@@ -15,6 +15,12 @@ export interface DocumentRef {
   mimeType?: string
 }
 
+/**
+ * A member's Aadhaar: photos of both sides, or the official e-Aadhaar PDF (which already shows
+ * both sides). The back carries the address.
+ */
+export type AadhaarDocuments = { kind: 'photos'; front: DocumentRef; back: DocumentRef } | { kind: 'pdf'; file: DocumentRef }
+
 interface MemberBase {
   fullName: string
   mobileNumber: string
@@ -39,7 +45,7 @@ export interface WorkingDetails {
 }
 
 /** Member data as entered by the registrant (maps to a team_members insert). */
-export type MemberInput = MemberBase & (StudentDetails | WorkingDetails) & { aadhaar: DocumentRef }
+export type MemberInput = MemberBase & (StudentDetails | WorkingDetails) & { aadhaar: AadhaarDocuments }
 
 /** Stored participant (maps to a team_members row). */
 export type TeamMember = MemberInput & {
