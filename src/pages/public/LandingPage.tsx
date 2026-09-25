@@ -116,6 +116,10 @@ export default function LandingPage() {
               By <BookAuthor />
             </p>
             <p className="mt-1 text-body text-ink">All questions are based exclusively on this book.</p>
+            <p className="text-small text-ink-muted">
+              After successful registration, a printed copy is sent by post to the registered address, and a PDF copy is
+              also provided.
+            </p>
           </div>
         </div>
       </section>
@@ -169,7 +173,7 @@ export default function LandingPage() {
           <p className="max-w-xs text-body text-ink-muted">
             {open
               ? `${availability.slotsRemaining} of ${availability.maximumTeams} team slots are still available.`
-              : 'Read the full rules and eligibility criteria.'}
+              : 'Read the complete Rules & Regulations.'}
           </p>
           {open && (
             <ButtonLink to="/register" className="w-full max-w-xs" iconRight={<ArrowRight aria-hidden className="size-5" />}>
@@ -177,7 +181,7 @@ export default function LandingPage() {
             </ButtonLink>
           )}
           <Link to="/rules" className="inline-flex min-h-11 items-center text-label font-semibold text-brand hover:underline">
-            Read full rules
+            Read the Rules & Regulations
           </Link>
         </section>
       </div>

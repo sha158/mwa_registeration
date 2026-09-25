@@ -1,4 +1,4 @@
-import { BOOK, EVENT, LIMITS } from '@/config/event'
+import { ENQUIRY_CONTACTS, EVENT, LIMITS, type Contact } from '@/config/event'
 import { eligibleBirthRange } from '@/domain/age'
 import { formatDate } from '@/utils/format'
 
@@ -15,37 +15,65 @@ export const NOT_ELIGIBLE = ['Aalims', 'Students currently studying in Madrasas'
 
 export const BIRTH_RANGE_TEXT = `Born between ${formatDate(range.earliest)} and ${formatDate(range.latest)}`
 
-export const RULE_SECTIONS: { title: string; items: string[] }[] = [
+export interface Rule {
+  title: string
+  text?: string
+  items?: string[]
+  contacts?: readonly Contact[]
+}
+
+/**
+ * The organisers' official Rules & Regulations, in their order and wording. Do not shorten or
+ * reword. Numbers come from config so the rules can never disagree with what registration enforces.
+ */
+export const RULES: Rule[] = [
+  { title: 'Age Criteria', text: `Participants must be between ${LIMITS.minAge} and ${LIMITS.maxAge} years of age.` },
+  { title: 'Eligibility', text: 'The competition is open to Boys only.' },
   {
-    title: 'Eligibility',
+    title: 'District Eligibility',
+    text: 'Participation is restricted to residents of Dakshina Kannada & Udupi Districts.',
+  },
+  {
+    title: 'Aalim/Madrasa Students',
+    text: 'Aalims and students currently studying in Madrasas are not eligible to participate.',
+  },
+  {
+    title: 'Team Composition',
+    text: `Each team must consist of exactly ${LIMITS.teamSize} members. Participation of all ${LIMITS.teamSize} members is mandatory.`,
+  },
+  {
+    title: 'Number of Teams',
+    text: `Only the first ${LIMITS.maxTeams} teams to complete registration will be accepted.`,
+  },
+  {
+    title: 'Book Distribution',
+    text: 'After successful registration, a hard copy of the prescribed book will be sent by post to the registered address. A soft copy (PDF) will also be provided.',
+  },
+  { title: 'Quiz Syllabus', text: 'All quiz questions will be based exclusively on the prescribed book.' },
+  {
+    title: 'Aadhaar Card',
+    text: 'A valid Aadhaar Card of each participant must be uploaded during online registration.',
+  },
+  {
+    title: 'Registration Details',
+    text: `The following details are required for all ${LIMITS.teamSize} team members:`,
     items: [
-      'Only boys may participate.',
-      `Participants must be ${LIMITS.minAge} to ${LIMITS.maxAge} years old on the competition day (${BIRTH_RANGE_TEXT.toLowerCase()}).`,
-      'Participants must be residents of Dakshina Kannada or Udupi district.',
-      'Aalims are not eligible.',
-      'Students currently studying in Madrasas are not eligible.',
+      'Name',
+      'Mobile Number',
+      'Address',
+      'Aadhaar Card',
+      'Student / Working Status',
+      'If Student: Course / Study Details',
+      'If Working: Occupation / Employment Details',
     ],
   },
+  { title: 'Registration Fee', text: 'No Entry Fee – Participation is completely FREE.' },
+  { title: 'Food Arrangements', text: 'Breakfast and Lunch will be provided to all registered participants.' },
+  { title: 'Reporting Time', text: `All participants must report at the venue sharp at ${EVENT.reportingTime}.` },
   {
-    title: 'Teams & registration',
-    items: [
-      `Each team has exactly ${LIMITS.teamSize} members. One person registers the whole team.`,
-      `Only ${LIMITS.maxTeams} teams can take part. Slots are allotted first-come, first-served.`,
-      'Registration is free.',
-      'Every member must upload photos of the front and back of their Aadhaar card (JPG or PNG), or the e-Aadhaar PDF — up to 2 MB per file. The full name, date of birth and address must be clearly visible.',
-      'Organisers verify every registration. Teams that do not meet the rules may be rejected.',
-    ],
+    title: 'Final Decision',
+    text: 'The decision of the Organisers shall be final and binding in all matters related to the competition.',
   },
-  {
-    title: 'Syllabus',
-    items: [`Questions are based exclusively on the prescribed book “${BOOK.title}” by ${BOOK.author} (${BOOK.authorHonorific}).`],
-  },
-  {
-    title: 'Competition day',
-    items: [
-      `Reporting time is ${EVENT.reportingTime}.`,
-      'Breakfast and lunch are provided.',
-      'Every participant receives a memento.',
-    ],
-  },
+  { title: 'Participant Memento', text: 'A memento will be presented to all participants.' },
+  { title: 'For More Details', contacts: ENQUIRY_CONTACTS },
 ]

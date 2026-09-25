@@ -22,11 +22,24 @@ export const EVENT = {
   helplineDisplay: '+91 85500 99332',
 } as const
 
-/** Organiser contact numbers, shown in the footer. */
-export const CONTACTS = [
+export interface Contact {
+  /** Digits only, used for tel: links. */
+  tel: string
+  display: string
+}
+
+/** Organisation contact numbers, shown in the footer. */
+export const CONTACTS: readonly Contact[] = [
   { tel: '+918550099332', display: '+91 85500 99332' },
   { tel: '+919986286747', display: '+91 99862 86747' },
-] as const
+]
+
+/** Competition enquiry numbers ("For more details", rule 16). */
+export const ENQUIRY_CONTACTS: readonly Contact[] = [
+  { tel: '+919900874115', display: '+91 99008 74115' },
+  { tel: '+917483684269', display: '+91 74836 84269' },
+  { tel: '+918747043722', display: '+91 87470 43722' },
+]
 
 /** The prescribed book. The whole syllabus is based on it. */
 export const BOOK = {

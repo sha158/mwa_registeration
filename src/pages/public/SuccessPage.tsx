@@ -1,10 +1,10 @@
-import { Check, CircleCheck, Clock, Copy, Download } from 'lucide-react'
+import { BookOpen, Check, CircleCheck, Clock, Copy, Download } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useLoaderData } from 'react-router'
 import type { successLoader } from '@/app/loaders'
 import { Button } from '@/components/ui/Button'
 import { Logo } from '@/components/ui/Logo'
-import { CONTACTS, EVENT } from '@/config/event'
+import { BOOK, CONTACTS, ENQUIRY_CONTACTS, EVENT } from '@/config/event'
 import { downloadBlob, formatDateTime, formatLongDate } from '@/utils/format'
 
 export default function SuccessPage() {
@@ -32,6 +32,7 @@ export default function SuccessPage() {
       '',
       `Competition day: ${formatLongDate(EVENT.date)}, reporting at ${EVENT.reportingTime}`,
       `Venue: ${EVENT.venue}`,
+      `Competition enquiries: ${ENQUIRY_CONTACTS.map((c) => c.display).join(' / ')}`,
       `Contact: ${CONTACTS.map((c) => c.display).join(' / ')}`,
       '',
       `${EVENT.organiser}, ${EVENT.location}`,
@@ -106,6 +107,13 @@ export default function SuccessPage() {
           <li className="flex gap-3">
             <CircleCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-brand" />
             Organisers will verify each member's details and Aadhaar. The Team Lead may be contacted by phone.
+          </li>
+          <li className="flex gap-3">
+            <BookOpen aria-hidden className="mt-0.5 size-5 shrink-0 text-brand" />
+            <span>
+              A printed copy of <strong>“{BOOK.title}”</strong> will be sent by post to the registered address. A PDF copy
+              will also be provided.
+            </span>
           </li>
           <li className="flex gap-3">
             <Clock aria-hidden className="mt-0.5 size-5 shrink-0 text-brand" />
